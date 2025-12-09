@@ -18,54 +18,41 @@ func setFields(in map[string]interface{}, out interface{}) error {
 		sourceType := reflect.ValueOf(value).Type().Kind()
 		destinationType := field.Type.Kind()
 
+		var err error
 		switch destinationType {
-		case reflect.Map:
-			err := i2s(value, fieldOfValue.Addr().Interface())
-			if err != nil {
-				return err
-			}
-			break
-		case reflect.Slice:
-			err := i2s(value, fieldOfValue.Addr().Interface())
-			if err != nil {
-				return err
-			}
-			break
+		case reflect.Map, reflect.Slice:
+			err = i2s(value, fieldOfValue.Addr().Interface())
 		case reflect.Int:
 			if sourceType == reflect.Float64 {
 				fieldOfValue.Set(reflect.ValueOf(int(value.(float64))))
 			} else if sourceType == reflect.Int64 {
 				fieldOfValue.Set(reflect.ValueOf(value.(int64)))
 			} else {
-				return fmt.Errorf("Can`t convert int")
+				err = fmt.Errorf("can`t convert int")
 			}
-			break
 		case reflect.Struct:
 			if sourceType == destinationType {
 				fieldOfValue.Set(reflect.ValueOf(value))
 			} else if sourceType == reflect.Map || sourceType == reflect.Slice {
-				err := i2s(value, fieldOfValue.Addr().Interface())
-				if err != nil {
-					return err
-				}
+				err = i2s(value, fieldOfValue.Addr().Interface())
 			} else {
-				return fmt.Errorf("Different structs` types: %T != %T", sourceType, destinationType)
+				err = fmt.Errorf("different structs` types: %T != %T", sourceType, destinationType)
 			}
-			break
 		case reflect.Bool:
 			if sourceType == destinationType {
 				fieldOfValue.Set(reflect.ValueOf(value))
 			} else {
-				return fmt.Errorf("Different  types: %T != %T", sourceType, destinationType)
+				err = fmt.Errorf("different  types: %T != %T", sourceType, destinationType)
 			}
-			break
 		case reflect.String:
 			if sourceType == destinationType {
 				fieldOfValue.Set(reflect.ValueOf(value))
 			} else {
-				return fmt.Errorf("Different  types: %T != %T", sourceType, destinationType)
+				err = fmt.Errorf("different  types: %T != %T", sourceType, destinationType)
 			}
-			break
+		}
+		if err != nil {
+			return err
 		}
 	}
 

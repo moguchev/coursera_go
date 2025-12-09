@@ -20,21 +20,28 @@ type IDBlock struct {
 func TestSimple(t *testing.T) {
 	expected := &Simple{
 		ID:       42,
-		Username: "rvasily",
+		Username: "leonardo",
 		Active:   true,
 	}
-	jsonRaw, _ := json.Marshal(expected)
+
+	jsonRaw, err := json.Marshal(expected)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	// fmt.Println(string(jsonRaw))
 
-	var tmpData interface{}
-	json.Unmarshal(jsonRaw, &tmpData)
+	var tmpData any
+	if err = json.Unmarshal(jsonRaw, &tmpData); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	result := new(Simple)
-	err := i2s(tmpData, result)
+	err = i2s(tmpData, result)
 
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
+
 	if !reflect.DeepEqual(expected, result) {
 		t.Errorf("results not match\nGot:\n%#v\nExpected:\n%#v", result, expected)
 	}
@@ -49,19 +56,20 @@ type Complex struct {
 func TestComplex(t *testing.T) {
 	smpl := Simple{
 		ID:       42,
-		Username: "rvasily",
+		Username: "leonardo",
 		Active:   true,
 	}
+
 	expected := &Complex{
 		SubSimple:  smpl,
 		ManySimple: []Simple{smpl, smpl},
-		Blocks:     []IDBlock{IDBlock{42}, IDBlock{42}},
+		Blocks:     []IDBlock{{42}, {42}},
 	}
 
 	jsonRaw, _ := json.Marshal(expected)
 	// fmt.Println(string(jsonRaw))
 
-	var tmpData interface{}
+	var tmpData any
 	json.Unmarshal(jsonRaw, &tmpData)
 
 	result := new(Complex)
@@ -78,14 +86,14 @@ func TestComplex(t *testing.T) {
 func TestSlice(t *testing.T) {
 	smpl := Simple{
 		ID:       42,
-		Username: "rvasily",
+		Username: "leonardo",
 		Active:   true,
 	}
 	expected := []Simple{smpl, smpl}
 
 	jsonRaw, _ := json.Marshal(expected)
 
-	var tmpData interface{}
+	var tmpData any
 	json.Unmarshal(jsonRaw, &tmpData)
 
 	result := []Simple{}
@@ -100,7 +108,7 @@ func TestSlice(t *testing.T) {
 }
 
 type ErrorCase struct {
-	Result   interface{}
+	Result   any
 	JsonData string
 }
 
@@ -109,45 +117,46 @@ type ErrorCase struct {
 func TestErrors(t *testing.T) {
 	cases := []ErrorCase{
 		// "Active":"DA" - string вместо bool
-		ErrorCase{
+		{
 			&Simple{},
 			`{"ID":42,"Username":"rvasily","Active":"DA"}`,
 		},
 		// "ID":"42" - string вместо int
-		ErrorCase{
+		{
 			&Simple{},
 			`{"ID":"42","Username":"rvasily","Active":true}`,
 		},
 		// "Username":100500 - int вместо string
-		ErrorCase{
+		{
 			&Simple{},
 			`{"ID":42,"Username":100500,"Active":true}`,
 		},
 		// "ManySimple":{} - ждём слайс, получаем структуру
-		ErrorCase{
+		{
 			&Complex{},
 			`{"SubSimple":{"ID":42,"Username":"rvasily","Active":true},"ManySimple":{}}`,
 		},
 		// "SubSimple":true - ждём структуру, получаем bool
-		ErrorCase{
+		{
 			&Complex{},
 			`{"SubSimple":true,"ManySimple":[{"ID":42,"Username":"rvasily","Active":true}]}`,
 		},
 		// ожидаем структуру - пришел массив
-		ErrorCase{
+		{
 			&Simple{},
 			`[{"ID":42,"Username":"rvasily","Active":true}]`,
 		},
 		// Simple{} ( без амперсанта, т.е. структура, а не указатель на структуру )
 		// пришел не ссылочный тип - мы не сможем вернуть результат
-		ErrorCase{
+		{
 			Simple{},
 			`{"ID":42,"Username":"rvasily","Active":true}`,
 		},
 	}
 	for idx, item := range cases {
-		var tmpData interface{}
-		json.Unmarshal([]byte(item.JsonData), &tmpData)
+		var tmpData any
+		_ = json.Unmarshal([]byte(item.JsonData), &tmpData)
+
 		inType := reflect.ValueOf(item.Result).Type()
 		err := i2s(tmpData, item.Result)
 		outType := reflect.ValueOf(item.Result).Type()

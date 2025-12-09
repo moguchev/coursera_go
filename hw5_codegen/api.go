@@ -41,7 +41,7 @@ func NewMyApi() *MyApi {
 			"admin":     20,
 		},
 		users: map[string]*User{
-			"rvasily": &User{
+			"rvasily": {
 				ID:       42,
 				Login:    "rvasily",
 				FullName: "Vasily Romanov",

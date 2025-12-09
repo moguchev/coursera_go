@@ -7,9 +7,9 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -53,7 +53,7 @@ func init() {
 }
 
 func (r *Repository) GetUsers(ctx context.Context) ([]User, error) {
-	data, err := ioutil.ReadFile(r.DB)
+	data, err := os.ReadFile(r.DB)
 	if err != nil {
 		return nil, err
 	}
